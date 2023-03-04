@@ -1,8 +1,40 @@
-﻿@{
+﻿@using BLL.Enums;
+@model CatalogModel
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <div>
+        @if (Model.TypeOfCatalogService is not TypeOfCatalogService.FromDB)
+        {
+            <a asp-action="Index" asp-route-fromWhat="db">To stored catalogs</a>
+        }
+        @if (Model.TypeOfCatalogService is not TypeOfCatalogService.FromLocalMachine)
+        {
+            <a asp-action="Index" asp-route-fromWhat="local">To local machine catalogs</a>
+        }
+        @foreach(string name in Model.EntryPointNames)
+        {
+            @if (name != Model.CurrentEntryPointName)
+            {
+                <a asp-action="Index" asp-route-fromWhat="@name">To @name catalogs</a>
+            }
+        }
+    </div>
+    <h1 class="display-4">@Model.CurrentEntryPointName</h1>
+    @if (Model.ChildCatalogDTOs.SubCatalogs is not null)
+    {
+        @foreach (ChildCatalogDTO child in Model.ChildCatalogDTOs.SubCatalogs)
+        {
+            <a asp-action="Index" asp-route-id="@child.Id" asp-route-fromWhat="@Model.CurrentEntryPointName">@child.Name</a>
+        }
+    }
+
+    <a class="btn" asp-action="DownloadFile" asp-route-fromWhat="@Model.CurrentEntryPointName">Download this entry point</a>
+
+    <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
+        <input type="file" name="noFile"/>
+        <button>Add new file</button>
+    </form>
 </div>

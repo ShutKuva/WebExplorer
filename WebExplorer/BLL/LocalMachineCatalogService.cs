@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
 using BLL.Abstractions;
+using BLL.Abstractions.Model;
 using Core;
-using Core.Enums;
 using DAL;
-using System.Globalization;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace BLL
 {
@@ -19,9 +18,11 @@ namespace BLL
             _mapper = mapper;
         }
 
-        public async Task<List<ChildCatalogDTO>> GetAllSubCatalogs(int id)
+        public async Task<CatalogWithSubCatalogs> GetAllSubCatalogs(int id)
         {
             Catalog? catalog = _context.Catalogs.FirstOrDefault(catalog => catalog.Id == id);
+
+            CatalogWithSubCatalogs result = new CatalogWithSubCatalogs { Catalog = _mapper.Map<CatalogDTO>(catalog) };
 
             if (catalog == null)
             {
@@ -29,17 +30,46 @@ namespace BLL
             }
             else if (!catalog.IsProcessed)
             {
-                return await GenerateChildrens(catalog);
+                result.SubCatalogs = await GenerateChildrens(catalog);
             } 
             else
             {
-                return _mapper.Map<List<ChildCatalogDTO>>(_context.Catalogs.SelectMany(c => c.Catalogs, (_, cincs) => cincs.ChildCatalog));
+                result.SubCatalogs = _mapper.Map<List<ChildCatalogDTO>>(_context.Catalogs.SelectMany(c => c.Catalogs));
             }
+
+            return result;
+        }
+
+        public Task<CatalogWithSubCatalogs> GetFirstCatalogs()
+        {
+            List<Catalog> resultList = new List<Catalog>();
+
+            EntryPoint localMachineEntryPoint = _context.EntryPoints.Include(ep => ep.Catalogs).FirstOrDefault(entry => entry.Name == "local")!;
+
+            if (localMachineEntryPoint is null)
+            {
+                localMachineEntryPoint = new EntryPoint() { Name = "local" };
+
+                foreach (string logicalDriver in Directory.GetLogicalDrives())
+                {
+                    resultList.Add(new Catalog() { Name = logicalDriver, IsProcessed = false });
+                }
+
+                localMachineEntryPoint.Catalogs = resultList;
+                _context.Add(localMachineEntryPoint);
+
+                _context.SaveChanges();
+            } else
+            {
+                resultList = localMachineEntryPoint.Catalogs;
+            }
+
+            return Task.FromResult(new CatalogWithSubCatalogs { Catalog = null, SubCatalogs = _mapper.Map<List<ChildCatalogDTO>>(resultList) });
         }
 
         private async Task<List<ChildCatalogDTO>> GenerateChildrens(Catalog catalog)
         {
-            string absolutePath = GetAbsolutePath(catalog);
+            string absolutePath = catalog.Name;
 
             string[] catalogs = Directory.GetDirectories(absolutePath, "*", SearchOption.TopDirectoryOnly);
 
@@ -59,22 +89,22 @@ namespace BLL
 
         private void GenerateChildren(Catalog parent, Catalog child)
         {
-            CatalogInCatalog cinc = new CatalogInCatalog { ChildCatalog = child, ParentId = parent.Id };
-            _context.Add(cinc);
+            parent.Catalogs.Add(child);
+            child.Parent = parent;
         }
 
-        private string GetAbsolutePath(Catalog catalog)
-        {
-            StringBuilder sb = new StringBuilder();
+        //private string GetAbsolutePath(Catalog catalog)
+        //{
+        //    StringBuilder sb = new StringBuilder();
 
-            while (catalog is not null && catalog.FirstNodeOf is FirstNodeOf.None)
-            {
-                sb.AppendFormat(CultureInfo.CurrentCulture, "{0}/", catalog.Name);
+        //    while (catalog is not null && catalog.FirstNodeOf is FirstNodeOf.None)
+        //    {
+        //        sb.AppendFormat(CultureInfo.CurrentCulture, "{0}/", catalog.Name);
 
-                catalog = _context.CatalogsInCatalogs.FirstOrDefault(cinc => cinc.ChildId == catalog.Id)?.ParentCatalog;
-            }
+        //        catalog = _context.CatalogsInCatalogs.FirstOrDefault(cinc => cinc.ChildId == catalog.Id)?.ParentCatalog;
+        //    }
 
-            return sb.ToString();
-        }
+        //    return sb.ToString();
+        //}
     }
 }

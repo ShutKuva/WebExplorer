@@ -2,6 +2,7 @@
 {
     public enum TypeOfCatalogService
     {
+        External,
         FromDB,
         FromLocalMachine
     }

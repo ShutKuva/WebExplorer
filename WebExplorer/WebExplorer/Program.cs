@@ -15,7 +15,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<CatalogProfile>();
 });
 
-builder.Services.AddScoped<DBCatalogService>();
+builder.Services.AddScoped<CatalogServiceFabric>();
+builder.Services.AddScoped<HelperFunctions>();
 
 var app = builder.Build();
 
@@ -38,6 +39,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{fromWhat=local}/{id?}");
 
 app.Run();

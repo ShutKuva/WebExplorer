@@ -1,10 +1,11 @@
-﻿using Core;
+﻿using BLL.Abstractions.Model;
+using Core;
 
 namespace BLL.Abstractions
 {
     public interface ICatalogService
     {
-        public Task<List<ChildCatalogDTO>> GetAllSubCatalogs(int id);
-
+        public Task<CatalogWithSubCatalogs> GetAllSubCatalogs(int id);
+        public Task<CatalogWithSubCatalogs> GetFirstCatalogs();
     }
 }

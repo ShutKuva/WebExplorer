@@ -2,7 +2,6 @@
 using BLL.Abstractions;
 using BLL.Enums;
 using DAL;
-using System.Runtime.InteropServices;
 
 namespace BLL
 {
@@ -17,7 +16,7 @@ namespace BLL
             _mapper = mapper;
         }
 
-        public ICatalogService Create(TypeOfCatalogService typeOfCatalogService)
+        public ICatalogService Create(TypeOfCatalogService typeOfCatalogService, string entryPointName = "db")
         {
             switch (typeOfCatalogService)
             {
@@ -25,7 +24,7 @@ namespace BLL
                     return new LocalMachineCatalogService(_context, _mapper);
                 case TypeOfCatalogService.FromDB:
                 default:
-                    return new DBCatalogService(_context, _mapper);
+                    return new DefaultCatalogService(_context, _mapper, entryPointName);
             }
         }
     }

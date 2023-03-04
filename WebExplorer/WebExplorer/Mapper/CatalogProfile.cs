@@ -9,6 +9,7 @@ namespace WebExplorer.Mapper
         {
             CreateMap<CatalogInCatalog, ChildCatalogDTO>().ForMember(ccdto => ccdto.Name, cincRes => cincRes.MapFrom(cinc => cinc.ChildCatalog!.Name));
             CreateMap<Catalog, ChildCatalogDTO>();
+            CreateMap<Catalog, CatalogDTO>();
         }
     }
 }
